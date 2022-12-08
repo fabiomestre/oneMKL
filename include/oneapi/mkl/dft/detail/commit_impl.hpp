@@ -26,6 +26,8 @@
 #include <CL/sycl.hpp>
 #endif
 
+#include "oneapi/mkl/detail/backends.hpp"
+
 namespace oneapi {
 namespace mkl {
 namespace dft {
@@ -33,9 +35,15 @@ namespace detail {
 
 class commit_impl {
 public:
-    commit_impl(sycl::queue queue) : queue_(queue), status(false) {}
+    commit_impl(sycl::queue queue, mkl::backend backend)
+            : queue_(queue),
+              backend_(backend),
+              status(false) {}
 
-    commit_impl(const commit_impl& other) : queue_(other.queue_), status(other.status) {}
+    commit_impl(const commit_impl& other)
+            : queue_(other.queue_),
+              backend_(other.backend_),
+              status(other.status) {}
 
     virtual ~commit_impl() {}
 
@@ -43,8 +51,15 @@ public:
         return queue_;
     }
 
+    mkl::backend& get_backend() {
+        return backend_;
+    }
+
+    virtual void* get_handle() = 0;
+
 protected:
     bool status;
+    mkl::backend backend_;
     sycl::queue queue_;
 };
 

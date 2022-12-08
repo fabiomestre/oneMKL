@@ -25,6 +25,7 @@
 
 #include "oneapi/mkl/types.hpp"
 #include "oneapi/mkl/exceptions.hpp"
+#include "oneapi/mkl/detail/backends.hpp"
 
 #include "oneapi/mkl/dft/detail/commit_impl.hpp"
 #include "oneapi/mkl/dft/detail/types_impl.hpp"
@@ -59,7 +60,7 @@ private:
 
 public:
     commit_derived_impl(sycl::queue queue, dft::detail::dft_values config_values)
-            : oneapi::mkl::dft::detail::commit_impl(queue),
+            : oneapi::mkl::dft::detail::commit_impl(queue, backend::mklgpu),
               handle(config_values.dimensions) {
         set_value(handle, config_values);
         // MKLGPU does not throw an informative exception for the following:
@@ -76,6 +77,10 @@ public:
             // Catching the real MKL exception causes headaches with naming.
             throw mkl::exception("DFT", "commit", mkl_exception.what());
         }
+    }
+
+    virtual void* get_handle() override {
+        return &handle;
     }
 
     virtual ~commit_derived_impl() override {}

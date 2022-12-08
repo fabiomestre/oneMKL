@@ -21,11 +21,9 @@
 #include "dft/function_table.hpp"
 
 #define WRAPPER_VERSION 1
+#define BACKEND         mklcpu
 
 extern "C" dft_function_table_t mkl_dft_table = {
     WRAPPER_VERSION,
-    oneapi::mkl::dft::mklcpu::create_commit,
-    oneapi::mkl::dft::mklcpu::create_commit,
-    oneapi::mkl::dft::mklcpu::create_commit,
-    oneapi::mkl::dft::mklcpu::create_commit
+#include "dft/backends/backend_wrappers.cxx"
 };

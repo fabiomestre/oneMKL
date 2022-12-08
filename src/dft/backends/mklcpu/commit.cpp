@@ -24,6 +24,7 @@
 #endif
 
 #include "oneapi/mkl/types.hpp"
+#include "oneapi/mkl/detail/backends.hpp"
 #include "oneapi/mkl/dft/types.hpp"
 #include "oneapi/mkl/dft/descriptor.hpp"
 
@@ -42,7 +43,7 @@ template <precision prec, domain dom>
 class commit_derived_impl : public detail::commit_impl {
 public:
     commit_derived_impl(sycl::queue queue, dft_values config_values)
-            : detail::commit_impl(queue),
+            : detail::commit_impl(queue, backend::mklcpu),
               status(DFT_NOTSET) {
         if (config_values.rank == 1) {
             status = DftiCreateDescriptor(&handle, get_precision(prec), get_domain(dom),
@@ -62,6 +63,10 @@ public:
         if (status != DFTI_NO_ERROR) {
             throw oneapi::mkl::exception("dft", "commit", "DftiCommitDescriptor failed");
         }
+    }
+
+    virtual void* get_handle() override {
+        return handle;
     }
 
     virtual ~commit_derived_impl() override {

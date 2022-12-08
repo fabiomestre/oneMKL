@@ -20,7 +20,6 @@
 #ifndef _ONEMKL_DFT_MKLGPU_HPP_
 #define _ONEMKL_DFT_MKLGPU_HPP_
 
-#include <cstdint>
 #if __has_include(<sycl/sycl.hpp>)
 #include <sycl/sycl.hpp>
 #else
@@ -43,8 +42,8 @@ class descriptor;
 } // namespace detail
 
 namespace mklgpu {
-template <dft::detail::precision prec, dft::detail::domain dom>
-ONEMKL_EXPORT dft::detail::commit_impl* create_commit(dft::detail::descriptor<prec, dom>& desc);
+
+#include "oneapi/mkl/dft/detail/dft_ct.hxx"
 
 } // namespace mklgpu
 } // namespace dft

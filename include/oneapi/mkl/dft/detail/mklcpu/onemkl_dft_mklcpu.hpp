@@ -20,6 +20,12 @@
 #ifndef _ONEMKL_DFT_MKLCPU_HPP_
 #define _ONEMKL_DFT_MKLCPU_HPP_
 
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+#else
+#include <CL/sycl.hpp>
+#endif
+
 #include "oneapi/mkl/detail/export.hpp"
 #include "oneapi/mkl/dft/detail/types_impl.hpp"
 
@@ -36,8 +42,8 @@ class descriptor;
 } // namespace detail
 
 namespace mklcpu {
-template <dft::detail::precision prec, dft::detail::domain dom>
-ONEMKL_EXPORT dft::detail::commit_impl* create_commit(dft::detail::descriptor<prec, dom>& desc);
+
+#include "oneapi/mkl/dft/detail/dft_ct.hxx"
 
 } // namespace mklcpu
 } // namespace dft

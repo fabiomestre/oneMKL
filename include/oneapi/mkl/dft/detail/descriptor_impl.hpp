@@ -68,9 +68,12 @@ public:
     dft_values get_values() {
         return values_;
     };
+    commit_impl* get_commit() {
+        return pimpl_.get();
+    }
 
 private:
-    std::unique_ptr<detail::commit_impl> pimpl_; // commit only
+    std::unique_ptr<commit_impl> pimpl_; // commit only
     sycl::queue queue_;
 
     std::int64_t rank_;
