@@ -24,26 +24,109 @@
 #endif
 
 #include "oneapi/mkl/types.hpp"
+#include "oneapi/mkl/exceptions.hpp"
 
+#include "oneapi/mkl/dft/detail/commit_impl.hpp"
+#include "oneapi/mkl/dft/detail/types_impl.hpp"
+#include "oneapi/mkl/dft/detail/descriptor_impl.hpp"
 #include "oneapi/mkl/dft/detail/mklgpu/onemkl_dft_mklgpu.hpp"
+
+#include "dft/backends/mklgpu/mklgpu_helpers.hpp"
+
+// MKLGPU header
+#include "oneapi/mkl/dfti.hpp"
+
+/**
+Note that in this file, the Intel MKL-GPU library's interface mirrors the interface
+of this OneMKL library. Consequently, the types under dft::TYPE are closed-source MKL types, 
+and types under dft::detail::TYPE are from this library.
+**/
 
 namespace oneapi {
 namespace mkl {
 namespace dft {
 namespace mklgpu {
+namespace detail {
 
-void commit_f(descriptor<precision::SINGLE, domain::REAL> &desc, sycl::queue &queue) {
-    throw std::runtime_error("Not implemented for mklgpu");
+/// Commit impl class specialization for MKLGPU.
+template <dft::detail::precision prec, dft::detail::domain dom>
+class commit_derived_impl : public dft::detail::commit_impl {
+private:
+    // Equivalent MKLGPU precision and domain from OneMKL's precision / domain.
+    static constexpr dft::precision mklgpu_prec = to_mklgpu(prec);
+    static constexpr dft::domain mklgpu_dom = to_mklgpu(dom);
+    using mklgpu_descriptor_t = dft::descriptor<mklgpu_prec, mklgpu_dom>;
+
+public:
+    commit_derived_impl(sycl::queue queue, dft::detail::dft_values config_values)
+            : oneapi::mkl::dft::detail::commit_impl(queue),
+              handle(config_values.dimensions) {
+        set_value(handle, config_values);
+        // MKLGPU does not throw an informative exception for the following:
+        if constexpr (prec == dft::detail::precision::DOUBLE) {
+            if (!queue.get_device().has(sycl::aspect::fp64)) {
+                throw mkl::exception("DFT", "commit", "Device does not support double precision.");
+            }
+        }
+
+        try {
+            handle.commit(queue);
+        }
+        catch (const std::exception& mkl_exception) {
+            // Catching the real MKL exception causes headaches with naming.
+            throw mkl::exception("DFT", "commit", mkl_exception.what());
+        }
+    }
+
+    virtual ~commit_derived_impl() override {}
+
+private:
+    // The native MKLGPU class.
+    mklgpu_descriptor_t handle;
+
+    void set_value(mklgpu_descriptor_t& desc, dft::detail::dft_values config) {
+        using onemkl_param = dft::detail::config_param;
+        using backend_param = dft::config_param;
+
+        // The following are read-only:
+        // Dimension, forward domain, precision, commit status.
+        // Lengths are supplied at descriptor construction time.
+        desc.set_value(backend_param::FORWARD_SCALE, config.fwd_scale);
+        desc.set_value(backend_param::BACKWARD_SCALE, config.bwd_scale);
+        desc.set_value(backend_param::NUMBER_OF_TRANSFORMS, config.number_of_transforms);
+        desc.set_value(backend_param::COMPLEX_STORAGE,
+                       to_mklgpu<onemkl_param::COMPLEX_STORAGE>(config.complex_storage));
+        // desc.set_value(backend_param::REAL_STORAGE, to_mklgpu<onemkl_param::REAL_STORAGE>(config.real_storage));
+        // Conjugate even storage only supports COMPLEX_COMPLEX. to_mklgpu will throw on invalid config.
+        (void)to_mklgpu<onemkl_param::CONJUGATE_EVEN_STORAGE>(config.conj_even_storage);
+        desc.set_value(backend_param::PLACEMENT,
+                       to_mklgpu<onemkl_param::PLACEMENT>(config.placement));
+        desc.set_value(backend_param::INPUT_STRIDES, config.input_strides.data());
+        desc.set_value(backend_param::OUTPUT_STRIDES, config.output_strides.data());
+        desc.set_value(backend_param::FWD_DISTANCE, config.fwd_dist);
+        desc.set_value(backend_param::BWD_DISTANCE, config.bwd_dist);
+        // Leave backend_param::REAL_STORAGE as default value (exists as config param, but no value ine dft_values)
+        // Leave backend_param::WORKSPACE as default value.
+        // Leave backend_param::ORDERING as default value.
+        // Leave backend_param::TRANSPOSE as false (default value).
+        // Leave backend_param::PACKED_FORMAT as only available value: CCE_FORMAT.
+    }
+};
+} // namespace detail
+
+template <dft::detail::precision prec, dft::detail::domain dom>
+dft::detail::commit_impl* create_commit(dft::detail::descriptor<prec, dom>& desc) {
+    return new detail::commit_derived_impl<prec, dom>(desc.get_queue(), desc.get_values());
 }
-void commit_c(descriptor<precision::SINGLE, domain::COMPLEX> &desc, sycl::queue &queue) {
-    throw std::runtime_error("Not implemented for mklgpu");
-}
-void commit_d(descriptor<precision::DOUBLE, domain::REAL> &desc, sycl::queue &queue) {
-    throw std::runtime_error("Not implemented for mklgpu");
-}
-void commit_z(descriptor<precision::DOUBLE, domain::COMPLEX> &desc, sycl::queue &queue) {
-    throw std::runtime_error("Not implemented for mklgpu");
-}
+
+template dft::detail::commit_impl* create_commit(
+    dft::detail::descriptor<dft::detail::precision::SINGLE, dft::detail::domain::REAL>&);
+template dft::detail::commit_impl* create_commit(
+    dft::detail::descriptor<dft::detail::precision::SINGLE, dft::detail::domain::COMPLEX>&);
+template dft::detail::commit_impl* create_commit(
+    dft::detail::descriptor<dft::detail::precision::DOUBLE, dft::detail::domain::REAL>&);
+template dft::detail::commit_impl* create_commit(
+    dft::detail::descriptor<dft::detail::precision::DOUBLE, dft::detail::domain::COMPLEX>&);
 
 } // namespace mklgpu
 } // namespace dft
