@@ -129,18 +129,23 @@ private:
 } // namespace detail
 
 template <dft::detail::precision prec, dft::detail::domain dom>
-dft::detail::commit_impl* create_commit(dft::detail::descriptor<prec, dom>& desc) {
-    return new detail::commit_derived_impl<prec, dom>(desc.get_queue(), desc.get_values());
+dft::detail::commit_impl* create_commit(dft::detail::descriptor<prec, dom>& desc,
+                                        sycl::queue& sycl_queue) {
+    return new detail::commit_derived_impl<prec, dom>(sycl_queue, desc.get_values());
 }
 
 template dft::detail::commit_impl* create_commit(
-    dft::detail::descriptor<dft::detail::precision::SINGLE, dft::detail::domain::REAL>&);
+    dft::detail::descriptor<dft::detail::precision::SINGLE, dft::detail::domain::REAL>&,
+    sycl::queue&);
 template dft::detail::commit_impl* create_commit(
-    dft::detail::descriptor<dft::detail::precision::SINGLE, dft::detail::domain::COMPLEX>&);
+    dft::detail::descriptor<dft::detail::precision::SINGLE, dft::detail::domain::COMPLEX>&,
+    sycl::queue&);
 template dft::detail::commit_impl* create_commit(
-    dft::detail::descriptor<dft::detail::precision::DOUBLE, dft::detail::domain::REAL>&);
+    dft::detail::descriptor<dft::detail::precision::DOUBLE, dft::detail::domain::REAL>&,
+    sycl::queue&);
 template dft::detail::commit_impl* create_commit(
-    dft::detail::descriptor<dft::detail::precision::DOUBLE, dft::detail::domain::COMPLEX>&);
+    dft::detail::descriptor<dft::detail::precision::DOUBLE, dft::detail::domain::COMPLEX>&,
+    sycl::queue&);
 
 } // namespace mklgpu
 } // namespace dft

@@ -122,14 +122,18 @@ private:
 };
 
 template <precision prec, domain dom>
-detail::commit_impl* create_commit(descriptor<prec, dom>& desc) {
-    return new commit_derived_impl<prec, dom>(desc.get_queue(), desc.get_values());
+detail::commit_impl* create_commit(descriptor<prec, dom>& desc, sycl::queue& sycl_queue) {
+    return new commit_derived_impl<prec, dom>(sycl_queue, desc.get_values());
 }
 
-template detail::commit_impl* create_commit(descriptor<precision::SINGLE, domain::REAL>&);
-template detail::commit_impl* create_commit(descriptor<precision::SINGLE, domain::COMPLEX>&);
-template detail::commit_impl* create_commit(descriptor<precision::DOUBLE, domain::REAL>&);
-template detail::commit_impl* create_commit(descriptor<precision::DOUBLE, domain::COMPLEX>&);
+template detail::commit_impl* create_commit(descriptor<precision::SINGLE, domain::REAL>&,
+                                            sycl::queue&);
+template detail::commit_impl* create_commit(descriptor<precision::SINGLE, domain::COMPLEX>&,
+                                            sycl::queue&);
+template detail::commit_impl* create_commit(descriptor<precision::DOUBLE, domain::REAL>&,
+                                            sycl::queue&);
+template detail::commit_impl* create_commit(descriptor<precision::DOUBLE, domain::COMPLEX>&,
+                                            sycl::queue&);
 
 } // namespace mklcpu
 } // namespace dft

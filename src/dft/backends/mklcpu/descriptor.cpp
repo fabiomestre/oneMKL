@@ -28,14 +28,17 @@ namespace dft {
 
 template <precision prec, domain dom>
 void descriptor<prec, dom>::commit(backend_selector<backend::mklcpu> selector) {
-    queue_ = selector.get_queue();
-    pimpl_.reset(mklcpu::create_commit(*this));
+    pimpl_.reset(mklcpu::create_commit(*this, selector.get_queue()));
 }
 
-template void descriptor<precision::SINGLE, domain::COMPLEX>::commit(backend_selector<backend::mklcpu>);
-template void descriptor<precision::SINGLE, domain::REAL>::commit(backend_selector<backend::mklcpu>);
-template void descriptor<precision::DOUBLE, domain::COMPLEX>::commit(backend_selector<backend::mklcpu>);
-template void descriptor<precision::DOUBLE, domain::REAL>::commit(backend_selector<backend::mklcpu>);
+template void descriptor<precision::SINGLE, domain::COMPLEX>::commit(
+    backend_selector<backend::mklcpu>);
+template void descriptor<precision::SINGLE, domain::REAL>::commit(
+    backend_selector<backend::mklcpu>);
+template void descriptor<precision::DOUBLE, domain::COMPLEX>::commit(
+    backend_selector<backend::mklcpu>);
+template void descriptor<precision::DOUBLE, domain::REAL>::commit(
+    backend_selector<backend::mklcpu>);
 
 } //namespace dft
 } //namespace mkl

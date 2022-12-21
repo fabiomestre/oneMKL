@@ -68,19 +68,13 @@ public:
     void commit(backend_selector<backend::mklgpu> selector);
 #endif
 
-    sycl::queue& get_queue() {
-        return queue_;
-    };
     dft_values<prec, dom> get_values() {
         return values_;
     };
 
 private:
-    std::unique_ptr<commit_impl> pimpl_; // commit only
-    sycl::queue queue_;
-
-    std::int64_t rank_;
-    std::vector<std::int64_t> dimensions_;
+    // Has a value when the descriptor is committed.
+    std::unique_ptr<commit_impl> pimpl_;
 
     // descriptor configuration values_ and structs
     dft_values<prec, dom> values_;

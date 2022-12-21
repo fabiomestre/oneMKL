@@ -35,30 +35,41 @@ static oneapi::mkl::detail::table_initializer<mkl::domain::dft, dft_function_tab
 
 template <>
 commit_impl* create_commit<precision::SINGLE, domain::COMPLEX>(
-    descriptor<precision::SINGLE, domain::COMPLEX>& desc) {
-    auto libkey = get_device_id(desc.get_queue());
-    return function_tables[libkey].create_commit_sycl_fz(desc);
+    descriptor<precision::SINGLE, domain::COMPLEX>& desc, sycl::queue& sycl_queue) {
+    auto libkey = get_device_id(sycl_queue);
+    return function_tables[libkey].create_commit_sycl_fz(desc, sycl_queue);
 }
 
 template <>
 commit_impl* create_commit<precision::DOUBLE, domain::COMPLEX>(
-    descriptor<precision::DOUBLE, domain::COMPLEX>& desc) {
-    auto libkey = get_device_id(desc.get_queue());
-    return function_tables[libkey].create_commit_sycl_dz(desc);
+    descriptor<precision::DOUBLE, domain::COMPLEX>& desc, sycl::queue& sycl_queue) {
+    auto libkey = get_device_id(sycl_queue);
+    return function_tables[libkey].create_commit_sycl_dz(desc, sycl_queue);
 }
 
 template <>
 commit_impl* create_commit<precision::SINGLE, domain::REAL>(
-    descriptor<precision::SINGLE, domain::REAL>& desc) {
-    auto libkey = get_device_id(desc.get_queue());
-    return function_tables[libkey].create_commit_sycl_fr(desc);
+    descriptor<precision::SINGLE, domain::REAL>& desc, sycl::queue& sycl_queue) {
+    auto libkey = get_device_id(sycl_queue);
+    return function_tables[libkey].create_commit_sycl_fr(desc, sycl_queue);
 }
 
 template <>
 commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
-    descriptor<precision::DOUBLE, domain::REAL>& desc) {
-    auto libkey = get_device_id(desc.get_queue());
-    return function_tables[libkey].create_commit_sycl_dr(desc);
+    descriptor<precision::DOUBLE, domain::REAL>& desc, sycl::queue& sycl_queue) {
+    auto libkey = get_device_id(sycl_queue);
+    return function_tables[libkey].create_commit_sycl_dr(desc, sycl_queue);
+}
+
+template <precision prec, domain dom>
+inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* func_name) {
+    bool is_committed = false;
+    desc.get_value(config_param::COMMIT_STATUS, &is_committed);
+    if (!is_committed) {
+        throw mkl::invalid_argument("DFT", func_name, "Descriptor not committed.");
+    }
+    // Committed means that the commit pointer is not null.
+    return get_device_id(get_commit(desc)->get_queue());
 }
 
 } // namespace detail
@@ -71,7 +82,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     template <>                                                                                         \
     ONEMKL_EXPORT void compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(             \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & inout) {           \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_forward")]                            \
             .compute_forward_buffer_inplace_real_##EXT(desc, inout);                                    \
     }                                                                                                   \
                                                                                                         \
@@ -79,7 +90,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     template <>                                                                                         \
     ONEMKL_EXPORT void compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_BACKWARD>(         \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_BACKWARD, 1> & inout) {       \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_forward")]                            \
             .compute_forward_buffer_inplace_complex_##EXT(desc, inout);                                 \
     }                                                                                                   \
                                                                                                         \
@@ -88,7 +99,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     ONEMKL_EXPORT void compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(             \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & inout_re,          \
         sycl::buffer<T_REAL, 1> & inout_im) {                                                           \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_forward")]                            \
             .compute_forward_buffer_inplace_split_##EXT(desc, inout_re, inout_im);                      \
     }                                                                                                   \
                                                                                                         \
@@ -98,7 +109,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_FORWARD, T_BACKWARD>(                 \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_FORWARD, 1> & in,             \
         sycl::buffer<T_BACKWARD, 1> & out) {                                                            \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_forward")]                            \
             .compute_forward_buffer_outofplace_##EXT(desc, in, out);                                    \
     }                                                                                                   \
                                                                                                         \
@@ -119,7 +130,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & in_re,             \
         sycl::buffer<T_REAL, 1> & in_im, sycl::buffer<T_REAL, 1> & out_re,                              \
         sycl::buffer<T_REAL, 1> & out_im) {                                                             \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_forward")]                            \
             .compute_forward_buffer_outofplace_split_##EXT(desc, in_re, in_im, out_re, out_im);         \
     }                                                                                                   \
                                                                                                         \
@@ -130,7 +141,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     ONEMKL_EXPORT sycl::event compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(      \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * inout,                              \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_forward")]                     \
             .compute_forward_usm_inplace_real_##EXT(desc, inout, dependencies);                         \
     }                                                                                                   \
                                                                                                         \
@@ -140,7 +151,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_BACKWARD>(                            \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_BACKWARD * inout,                          \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_forward")]                     \
             .compute_forward_usm_inplace_complex_##EXT(desc, inout, dependencies);                      \
     }                                                                                                   \
                                                                                                         \
@@ -149,7 +160,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     ONEMKL_EXPORT sycl::event compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(      \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * inout_re, T_REAL * inout_im,        \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_forward")]                     \
             .compute_forward_usm_inplace_split_##EXT(desc, inout_re, inout_im, dependencies);           \
     }                                                                                                   \
                                                                                                         \
@@ -159,7 +170,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_FORWARD, T_BACKWARD>(                 \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_FORWARD * in, T_BACKWARD * out,            \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_forward")]                     \
             .compute_forward_usm_outofplace_##EXT(desc, in, out, dependencies);                         \
     }                                                                                                   \
                                                                                                         \
@@ -179,7 +190,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL, T_REAL>(                        \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * in_re, T_REAL * in_im,              \
         T_REAL * out_re, T_REAL * out_im, const std::vector<sycl::event>& dependencies) {               \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_forward")]                     \
             .compute_forward_usm_outofplace_split_##EXT(desc, in_re, in_im, out_re, out_im,             \
                                                         dependencies);                                  \
     }                                                                                                   \
@@ -190,7 +201,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     template <>                                                                                         \
     ONEMKL_EXPORT void compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(            \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & inout) {           \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_backward")]                           \
             .compute_backward_buffer_inplace_real_##EXT(desc, inout);                                   \
     }                                                                                                   \
                                                                                                         \
@@ -198,7 +209,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     template <>                                                                                         \
     ONEMKL_EXPORT void compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_BACKWARD>(        \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_BACKWARD, 1> & inout) {       \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_backward")]                           \
             .compute_backward_buffer_inplace_complex_##EXT(desc, inout);                                \
     }                                                                                                   \
                                                                                                         \
@@ -207,7 +218,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     ONEMKL_EXPORT void compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(            \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & inout_re,          \
         sycl::buffer<T_REAL, 1> & inout_im) {                                                           \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_backward")]                           \
             .compute_backward_buffer_inplace_split_##EXT(desc, inout_re, inout_im);                     \
     }                                                                                                   \
                                                                                                         \
@@ -217,7 +228,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_BACKWARD, T_FORWARD>(                \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_BACKWARD, 1> & in,            \
         sycl::buffer<T_FORWARD, 1> & out) {                                                             \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_backward")]                           \
             .compute_backward_buffer_outofplace_##EXT(desc, in, out);                                   \
     }                                                                                                   \
                                                                                                         \
@@ -238,7 +249,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & in_re,             \
         sycl::buffer<T_REAL, 1> & in_im, sycl::buffer<T_REAL, 1> & out_re,                              \
         sycl::buffer<T_REAL, 1> & out_im) {                                                             \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_backward")]                           \
             .compute_backward_buffer_outofplace_split_##EXT(desc, in_re, in_im, out_re, out_im);        \
     }                                                                                                   \
                                                                                                         \
@@ -250,7 +261,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(                               \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * inout,                              \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]                    \
             .compute_backward_usm_inplace_real_##EXT(desc, inout, dependencies);                        \
     }                                                                                                   \
                                                                                                         \
@@ -260,7 +271,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_BACKWARD>(                           \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_BACKWARD * inout,                          \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]                    \
             .compute_backward_usm_inplace_complex_##EXT(desc, inout, dependencies);                     \
     }                                                                                                   \
                                                                                                         \
@@ -270,7 +281,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL>(                               \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * inout_re, T_REAL * inout_im,        \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]                    \
             .compute_backward_usm_inplace_split_##EXT(desc, inout_re, inout_im, dependencies);          \
     }                                                                                                   \
                                                                                                         \
@@ -280,7 +291,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_BACKWARD, T_FORWARD>(                \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_BACKWARD * in, T_FORWARD * out,            \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]                    \
             .compute_backward_usm_outofplace_##EXT(desc, in, out, dependencies);                        \
     }                                                                                                   \
                                                                                                         \
@@ -300,7 +311,7 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL, T_REAL>(                       \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * in_re, T_REAL * in_im,              \
         T_REAL * out_re, T_REAL * out_im, const std::vector<sycl::event>& dependencies) {               \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]                    \
             .compute_backward_usm_outofplace_split_##EXT(desc, in_re, in_im, out_re, out_im,            \
                                                          dependencies);                                 \
     }

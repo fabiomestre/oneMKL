@@ -28,8 +28,7 @@ namespace dft {
 
 template <precision prec, domain dom>
 void descriptor<prec, dom>::commit(sycl::queue &queue) {
-    queue_ = queue;
-    pimpl_.reset(detail::create_commit(*this));
+    pimpl_.reset(detail::create_commit(*this, queue));
 }
 template void descriptor<precision::SINGLE, domain::COMPLEX>::commit(sycl::queue &);
 template void descriptor<precision::SINGLE, domain::REAL>::commit(sycl::queue &);

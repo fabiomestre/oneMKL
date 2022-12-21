@@ -28,9 +28,10 @@ namespace dft {
 namespace detail {
 
 // Compute the default strides. Modifies real_strides and complex_strides arguments.
-void compute_default_strides(const std::vector<std::int64_t>& dimensions, int rank,
+void compute_default_strides(const std::vector<std::int64_t>& dimensions,
                              std::vector<std::int64_t>& input_strides,
                              std::vector<std::int64_t>& output_strides) {
+    int rank = dimensions.size();
     std::vector<std::int64_t> strides(rank + 1, 1);
     for (int i = rank - 1; i > 0; --i) {
         strides[i] = strides[i + 1] * dimensions[i];
@@ -123,10 +124,8 @@ void descriptor<prec, dom>::set_value(config_param param, ...) {
 }
 
 template <precision prec, domain dom>
-descriptor<prec, dom>::descriptor(std::vector<std::int64_t> dimensions)
-        : dimensions_(std::move(dimensions)),
-          rank_(dimensions.size()) {
-    if (dimensions_.size() == 0) {
+descriptor<prec, dom>::descriptor(std::vector<std::int64_t> dimensions) {
+    if (dimensions.size() == 0) {
         throw mkl::invalid_argument("DFT", "descriptor", "Cannot have 0 dimensional DFT.");
     }
     for (const auto& dim : dimensions) {
@@ -136,7 +135,7 @@ descriptor<prec, dom>::descriptor(std::vector<std::int64_t> dimensions)
         }
     }
     // Assume forward transform.
-    compute_default_strides(dimensions_, rank_, values_.input_strides, values_.output_strides);
+    compute_default_strides(dimensions, values_.input_strides, values_.output_strides);
     values_.bwd_scale = 1.0;
     values_.fwd_scale = 1.0;
     values_.number_of_transforms = 1;
@@ -150,8 +149,8 @@ descriptor<prec, dom>::descriptor(std::vector<std::int64_t> dimensions)
     values_.ordering = config_value::ORDERED;
     values_.transpose = false;
     values_.packed_format = config_value::CCE_FORMAT;
-    values_.dimensions = dimensions_;
-    values_.rank = rank_;
+    values_.dimensions = std::move(dimensions);
+    values_.rank = values_.dimensions.size();
 }
 
 template <precision prec, domain dom>

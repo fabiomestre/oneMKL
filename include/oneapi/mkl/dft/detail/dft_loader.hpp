@@ -20,6 +20,12 @@
 #ifndef _ONEMKL_DFT_LOADER_HPP_
 #define _ONEMKL_DFT_LOADER_HPP_
 
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+#else
+#include <CL/sycl.hpp>
+#endif
+
 #include "oneapi/mkl/detail/export.hpp"
 #include "oneapi/mkl/dft/detail/types_impl.hpp"
 
@@ -34,7 +40,7 @@ template <precision prec, domain dom>
 class descriptor;
 
 template <precision prec, domain dom>
-ONEMKL_EXPORT commit_impl* create_commit(descriptor<prec, dom>& desc);
+ONEMKL_EXPORT commit_impl* create_commit(descriptor<prec, dom>& desc, sycl::queue& queue);
 
 } // namespace detail
 } // namespace dft
