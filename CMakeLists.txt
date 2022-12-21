@@ -92,6 +92,8 @@ endif()
 
 # Define required CXX compilers before project
 if(CMAKE_CXX_COMPILER OR NOT ONEMKL_SYCL_IMPLEMENTATION STREQUAL "dpc++")
+#  add_compile_options(-fdeclare-spirv-builtins)
+#  include_directories(/home/fabio/projects/dpcpp/llvm/sycl/include)
   if(WIN32)
     string(REPLACE "\\" "/" CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER})
   endif()

@@ -65,6 +65,11 @@ set(dft_TEST_LIST
 
 set(dft_TEST_LINK "")
 
+if(domain STREQUAL "dft" AND ENABLE_MKLCPU_BACKEND)
+  find_library(OPENCL_LIBRARY NAMES OpenCL)
+  message(STATUS "Found OpenCL: ${OPENCL_LIBRARY}")
+endif()
+
 foreach(domain ${TARGET_DOMAINS})
   # Generate RT and CT test lists
   set(${domain}_TEST_LIST_RT ${${domain}_TEST_LIST})
@@ -72,7 +77,7 @@ foreach(domain ${TARGET_DOMAINS})
   list(TRANSFORM ${domain}_TEST_LIST_RT APPEND _rt)
   list(TRANSFORM ${domain}_TEST_LIST_CT APPEND _ct)
 
-  add_executable(test_main_${domain}_ct main_test.cpp)
+  add_executable(test_main_${domain}_ct main_test.cpp dft/include/test_common.hpp)
   target_include_directories(test_main_${domain}_ct PUBLIC ${GTEST_INCLUDE_DIR})
   
   if (USE_ADD_SYCL_TO_TARGET_INTEGRATION)
@@ -97,6 +102,12 @@ foreach(domain ${TARGET_DOMAINS})
     if (USE_ADD_SYCL_TO_TARGET_INTEGRATION)
       add_sycl_to_target(TARGET test_main_${domain}_rt SOURCES main_test.cpp)
     endif()
+  endif()
+
+  if(domain STREQUAL "dft" AND ENABLE_MKLCPU_BACKEND)
+    add_dependencies(test_main_${domain}_ct onemkl_${domain}_mklcpu)
+    list(APPEND ONEMKL_LIBRARIES_${domain} onemkl_${domain}_mklcpu)
+    target_link_libraries(test_main_${domain}_ct PUBLIC ${OPENCL_LIBRARY})
   endif()
 
   if((NOT domain STREQUAL "dft") AND ENABLE_MKLCPU_BACKEND)
@@ -146,6 +157,7 @@ foreach(domain ${TARGET_DOMAINS})
       ${CMAKE_DL_LIBS}
       ${${domain}_TEST_LINK}
       ${ONEMKL_LIBRARIES_${domain}}
+#      onemkl
       ONEMKL::SYCL::SYCL
       ${${domain}_TEST_LIST_CT}
   )
