@@ -63,9 +63,9 @@ commit_impl* create_commit<precision::DOUBLE, domain::REAL>(
 
 template <precision prec, domain dom>
 inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* func_name) {
-    bool is_committed = false;
+    config_value is_committed{config_value::UNCOMMITTED};
     desc.get_value(config_param::COMMIT_STATUS, &is_committed);
-    if (!is_committed) {
+    if (is_committed != config_value::COMMITTED) {
         throw mkl::invalid_argument("DFT", func_name, "Descriptor not committed.");
     }
     // Committed means that the commit pointer is not null.
