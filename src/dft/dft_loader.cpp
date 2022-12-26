@@ -119,7 +119,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL, T_REAL>(                        \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & in,                \
         sycl::buffer<T_REAL, 1> & out) {                                                                \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        detail::function_tables[detail::get_device(desc, "compute_forward")]                            \
             .compute_forward_buffer_outofplace_real_##EXT(desc, in, out);                               \
     }                                                                                                   \
                                                                                                         \
@@ -180,7 +180,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_forward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL, T_REAL>(                        \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * in, T_REAL * out,                   \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_forward")]                     \
             .compute_forward_usm_outofplace_real_##EXT(desc, in, out, dependencies);                    \
     }                                                                                                   \
                                                                                                         \
@@ -238,7 +238,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL, T_REAL>(                       \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, sycl::buffer<T_REAL, 1> & in,                \
         sycl::buffer<T_REAL, 1> & out) {                                                                \
-        detail::function_tables[get_device_id(desc.get_queue())]                                        \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]                    \
             .compute_backward_buffer_outofplace_real_##EXT(desc, in, out);                              \
     }                                                                                                   \
                                                                                                         \
@@ -301,7 +301,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_backward<dft::detail::descriptor<PRECISION, DOMAIN>, T_REAL, T_REAL>(                       \
         dft::detail::descriptor<PRECISION, DOMAIN> & desc, T_REAL * in, T_REAL * out,                   \
         const std::vector<sycl::event>& dependencies) {                                                 \
-        return detail::function_tables[get_device_id(desc.get_queue())]                                 \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]                    \
             .compute_backward_usm_outofplace_real_##EXT(desc, in, out, dependencies);                   \
     }                                                                                                   \
                                                                                                         \
@@ -325,7 +325,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_forward<dft::detail::descriptor<PRECISION, domain::REAL>, T_COMPLEX, T_COMPLEX>(      \
         dft::detail::descriptor<PRECISION, domain::REAL> & desc, sycl::buffer<T_COMPLEX, 1> & in, \
         sycl::buffer<T_COMPLEX, 1> & out) {                                                       \
-        detail::function_tables[get_device_id(desc.get_queue())]                                  \
+        detail::function_tables[detail::get_device(desc, "compute_forward")]                      \
             .compute_forward_buffer_outofplace_complex_##EXT(desc, in, out);                      \
     }                                                                                             \
                                                                                                   \
@@ -335,7 +335,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_forward<dft::detail::descriptor<PRECISION, domain::REAL>, T_COMPLEX, T_COMPLEX>(      \
         dft::detail::descriptor<PRECISION, domain::REAL> & desc, T_COMPLEX * in, T_COMPLEX * out, \
         const std::vector<sycl::event>& dependencies) {                                           \
-        return detail::function_tables[get_device_id(desc.get_queue())]                           \
+        return detail::function_tables[detail::get_device(desc, "compute_forward")]               \
             .compute_forward_usm_outofplace_complex_##EXT(desc, in, out, dependencies);           \
     }                                                                                             \
                                                                                                   \
@@ -345,7 +345,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_backward<dft::detail::descriptor<PRECISION, domain::REAL>, T_COMPLEX, T_COMPLEX>(     \
         dft::detail::descriptor<PRECISION, domain::REAL> & desc, sycl::buffer<T_COMPLEX, 1> & in, \
         sycl::buffer<T_COMPLEX, 1> & out) {                                                       \
-        detail::function_tables[get_device_id(desc.get_queue())]                                  \
+        detail::function_tables[detail::get_device(desc, "compute_backward")]                     \
             .compute_backward_buffer_outofplace_complex_##EXT(desc, in, out);                     \
     }                                                                                             \
                                                                                                   \
@@ -355,7 +355,7 @@ inline oneapi::mkl::device get_device(descriptor<prec, dom>& desc, const char* f
     compute_backward<dft::detail::descriptor<PRECISION, domain::REAL>, T_COMPLEX, T_COMPLEX>(     \
         dft::detail::descriptor<PRECISION, domain::REAL> & desc, T_COMPLEX * in, T_COMPLEX * out, \
         const std::vector<sycl::event>& dependencies) {                                           \
-        return detail::function_tables[get_device_id(desc.get_queue())]                           \
+        return detail::function_tables[detail::get_device(desc, "compute_backward")]              \
             .compute_backward_usm_outofplace_complex_##EXT(desc, in, out, dependencies);          \
     }
 
