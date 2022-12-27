@@ -77,7 +77,7 @@ foreach(domain ${TARGET_DOMAINS})
   list(TRANSFORM ${domain}_TEST_LIST_RT APPEND _rt)
   list(TRANSFORM ${domain}_TEST_LIST_CT APPEND _ct)
 
-  add_executable(test_main_${domain}_ct main_test.cpp dft/include/test_common.hpp)
+  add_executable(test_main_${domain}_ct main_test.cpp)
   target_include_directories(test_main_${domain}_ct PUBLIC ${GTEST_INCLUDE_DIR})
   
   if (USE_ADD_SYCL_TO_TARGET_INTEGRATION)
