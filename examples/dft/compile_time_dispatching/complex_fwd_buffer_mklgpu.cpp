@@ -79,7 +79,6 @@ void run_example(const sycl::device& gpu_device) {
 //
 // Description of example setup, apis used and supported floating point type precisions
 //
-
 void print_example_banner() {
     std::cout << "" << std::endl;
     std::cout << "########################################################################"

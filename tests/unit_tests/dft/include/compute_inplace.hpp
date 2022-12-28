@@ -1,38 +1,43 @@
-#ifndef ONEMKL_COMPUTE_IN_HPP
-#define ONEMKL_COMPUTE_IN_HPP
+/***************************************************************************
+*  Copyright (C) Codeplay Software Limited
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  For your convenience, a copy of the License has been included in this
+*  repository.
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*
+**************************************************************************/
 
-#if __has_include(<sycl/sycl.hpp>)
-#include <sycl/sycl.hpp>
-#else
-#include <CL/sycl.hpp>
-#endif
-#include "oneapi/mkl.hpp"
-#include "test_helper.hpp"
-#include "../../blas/include/test_common.hpp"
-#include "test_common.hpp"
-#include "oneapi/mkl/dft/descriptor.hpp"
-#include "oneapi/mkl/dft/types.hpp"
-#include "reference_dft.hpp"
+#ifndef ONEMKL_COMPUTE_INPLACE_HPP
+#define ONEMKL_COMPUTE_INPLACE_HPP
 
-/* TODO Domain Real and Complex input */
 template <dft::precision precision, dft::domain domain>
 int DFT_Test<precision, domain>::test_in_place_buffer() {
     if (!init()) {
         return test_skipped;
     }
 
-    dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
+    descriptor_t descriptor{ size };
     descriptor.set_value(oneapi::mkl::dft::config_param::PLACEMENT,
                          oneapi::mkl::dft::config_value::INPLACE);
 
-    const size_t container_size =
-        domain == dft::domain::REAL ? conjugate_even_size : default_1d_lengths;
+    const size_t container_size = domain == dft::domain::REAL ? conjugate_even_size : size;
 
     sycl::buffer<InputType, 1> inout_dev{ sycl::range<1>(container_size) };
     std::vector<InputType> out_host(container_size);
 
     copy_to_device(sycl_queue, input, inout_dev);
-    descriptor.commit(sycl_queue);
+
+    commit_descriptor(descriptor, sycl_queue);
 
     try {
         dft::compute_forward<std::remove_reference_t<decltype(descriptor)>, InputType>(descriptor,
@@ -59,11 +64,11 @@ int DFT_Test<precision, domain>::test_in_place_buffer() {
                                        error_margin, std::cout));
     }
 
-    dft::descriptor<precision, domain> descriptor_back{ default_1d_lengths };
+    descriptor_t descriptor_back{ size };
     descriptor_back.set_value(oneapi::mkl::dft::config_param::PLACEMENT,
                               oneapi::mkl::dft::config_value::INPLACE);
-    descriptor_back.set_value(dft::config_param::BACKWARD_SCALE, (1.0 / default_1d_lengths));
-    descriptor_back.commit(sycl_queue);
+    descriptor_back.set_value(dft::config_param::BACKWARD_SCALE, (1.0 / size));
+    commit_descriptor(descriptor_back, sycl_queue);
 
     try {
         dft::compute_backward<std::remove_reference_t<decltype(descriptor_back)>, InputType>(
@@ -88,16 +93,14 @@ int DFT_Test<precision, domain>::test_in_place_USM() {
         return test_skipped;
     }
 
-    dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
+    descriptor_t descriptor{ size };
     descriptor.set_value(oneapi::mkl::dft::config_param::PLACEMENT,
                          oneapi::mkl::dft::config_value::INPLACE);
-    descriptor.commit(sycl_queue);
+    commit_descriptor(descriptor, sycl_queue);
 
-    const size_t container_size =
-        domain == dft::domain::REAL ? conjugate_even_size : default_1d_lengths;
+    const size_t container_size = domain == dft::domain::REAL ? conjugate_even_size : size;
 
     auto ua_input = usm_allocator<InputType, usm::alloc::shared, 64>(cxt, *dev);
-    auto ua_output = usm_allocator<OutputType, usm::alloc::shared, 64>(cxt, *dev);
 
     std::vector<InputType, decltype(ua_input)> inout(container_size, ua_input);
     std::copy(input.begin(), input.end(), inout.begin());
@@ -127,11 +130,11 @@ int DFT_Test<precision, domain>::test_in_place_USM() {
                                        error_margin, std::cout));
     }
 
-    dft::descriptor<precision, domain> descriptor_back{ default_1d_lengths };
+    descriptor_t descriptor_back{ size };
     descriptor_back.set_value(oneapi::mkl::dft::config_param::PLACEMENT,
                               oneapi::mkl::dft::config_value::INPLACE);
-    descriptor_back.set_value(dft::config_param::BACKWARD_SCALE, (1.0 / default_1d_lengths));
-    descriptor_back.commit(sycl_queue);
+    descriptor_back.set_value(dft::config_param::BACKWARD_SCALE, (1.0 / size));
+    commit_descriptor(descriptor_back, sycl_queue);
 
     try {
         std::vector<event> dependencies;
@@ -151,4 +154,4 @@ int DFT_Test<precision, domain>::test_in_place_USM() {
     return !::testing::Test::HasFailure();
 }
 
-#endif //ONEMKL_COMPUTE_IN_HPP
+#endif //ONEMKL_COMPUTE_INPLACE_HPP

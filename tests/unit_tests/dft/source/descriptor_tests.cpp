@@ -1,26 +1,23 @@
-/*******************************************************************************
-* Copyright 2020-2022 Intel Corporation
+/***************************************************************************
+*  Copyright (C) Codeplay Software Limited
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
 *
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
+*      http://www.apache.org/licenses/LICENSE-2.0
 *
-* http://www.apache.org/licenses/LICENSE-2.0
+*  For your convenience, a copy of the License has been included in this
+*  repository.
 *
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions
-* and limitations under the License.
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
 *
-*
-* SPDX-License-Identifier: Apache-2.0
-*******************************************************************************/
+**************************************************************************/
 
-#include <cstdint>
-#include <cstdlib>
 #include <iostream>
-#include <limits>
 #include <vector>
 
 #if __has_include(<sycl/sycl.hpp>)
@@ -28,35 +25,16 @@
 #else
 #include <CL/sycl.hpp>
 #endif
-#include "oneapi/mkl.hpp"
+
 #include "test_helper.hpp"
-#include "oneapi/mkl/dft/descriptor.hpp"
-#include "oneapi/mkl/dft/types.hpp"
-#include "reference_dft.hpp"
-
+#include "test_common.hpp"
 #include <gtest/gtest.h>
-
-using std::vector;
-using namespace oneapi::mkl;
-using namespace sycl;
 
 extern std::vector<sycl::device*> devices;
 
 namespace {
 
-// Catch asynchronous exceptions.
-auto exception_handler = [](sycl::exception_list exceptions) {
-    for (std::exception_ptr const& e : exceptions) {
-        try {
-            std::rethrow_exception(e);
-        }
-        catch (sycl::exception e) {
-            std::cout << "Caught asynchronous SYCL exception during AXPY:\n"
-                      << e.what() << std::endl;
-            print_error_code(e);
-        }
-    }
-};
+using namespace oneapi::mkl;
 
 constexpr std::int64_t default_1d_lengths = 4;
 const std::vector<std::int64_t> default_3d_lengths{ 124, 5, 3 };
@@ -90,7 +68,7 @@ inline void set_and_get_lengths(sycl::queue& sycl_queue) {
         EXPECT_EQ(new_lengths, lengths_value);
         EXPECT_EQ(dimensions_before_set, dimensions_after_set);
 
-        descriptor.commit(sycl_queue);
+        commit_descriptor(descriptor, sycl_queue);
     }
 
     /* >= 2D */
@@ -116,8 +94,6 @@ inline void set_and_get_lengths(sycl::queue& sycl_queue) {
 
         EXPECT_EQ(new_lengths, lengths_value);
         EXPECT_EQ(dimensions_before_set, dimensions_after_set);
-
-        //        descriptor.commit(sycl_queue); FIXME Commiting multiple dimensions does not work.
     }
 }
 
@@ -137,38 +113,46 @@ inline void set_and_get_strides(sycl::queue& sycl_queue) {
 
     std::vector<std::int64_t> default_strides_value{ 0, default_stride_d1, default_stride_d2,
                                                      default_stride_d3 };
-    std::vector<std::int64_t> strides_value{ 50, default_stride_d1 * 2, default_stride_d2 * 2,
-                                             default_stride_d3 * 2 };
+
+    std::vector<std::int64_t> input_strides_value;
+    std::vector<std::int64_t> output_strides_value;
+    if constexpr (domain == dft::domain::COMPLEX) {
+        input_strides_value = { 50, default_stride_d1 * 2, default_stride_d2 * 2,
+                                default_stride_d3 * 2 };
+        output_strides_value = { 50, default_stride_d1 * 2, default_stride_d2 * 2,
+                                 default_stride_d3 * 2 };
+    }
+    else {
+        input_strides_value = { 0, default_3d_lengths[1] * (default_3d_lengths[2] / 2 + 1) * 2,
+                                (default_3d_lengths[2] / 2 + 1) * 2, 1 };
+        output_strides_value = { 0, default_3d_lengths[1] * (default_3d_lengths[2] / 2 + 1),
+                                 (default_3d_lengths[2] / 2 + 1), 1 };
+    }
 
     std::vector<std::int64_t> input_strides_before_set(strides_size);
     std::vector<std::int64_t> input_strides_after_set(strides_size);
 
     descriptor.get_value(dft::config_param::INPUT_STRIDES, input_strides_before_set.data());
     EXPECT_EQ(default_strides_value, input_strides_before_set);
-    descriptor.set_value(dft::config_param::INPUT_STRIDES, strides_value.data());
+    descriptor.set_value(dft::config_param::INPUT_STRIDES, input_strides_value.data());
     descriptor.get_value(dft::config_param::INPUT_STRIDES, input_strides_after_set.data());
-    EXPECT_EQ(strides_value, input_strides_after_set);
+    EXPECT_EQ(input_strides_value, input_strides_after_set);
 
     std::vector<std::int64_t> output_strides_before_set(strides_size);
     std::vector<std::int64_t> output_strides_after_set(strides_size);
     descriptor.get_value(dft::config_param::OUTPUT_STRIDES, output_strides_before_set.data());
     EXPECT_EQ(default_strides_value, output_strides_before_set);
-    descriptor.set_value(dft::config_param::OUTPUT_STRIDES, strides_value.data());
+    descriptor.set_value(dft::config_param::OUTPUT_STRIDES, output_strides_value.data());
     descriptor.get_value(dft::config_param::OUTPUT_STRIDES, output_strides_after_set.data());
-    EXPECT_EQ(strides_value, output_strides_after_set);
-
-    //    descriptor.commit(sycl_queue); //FIXME Commiting multiple dimensions does not work.
+    EXPECT_EQ(input_strides_value, output_strides_after_set);
 }
 
-/* TODO More negative scenario tests (e.g. setting the wrong value and commiting) */
 template <dft::precision precision, dft::domain domain>
 inline void set_and_get_values(sycl::queue& sycl_queue) {
     dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
 
-    //    using Precision_Type =
-    //        typename std::conditional<precision == dft::precision::SINGLE, float, double>::type;
-    using Precision_Type = typename std::conditional<precision == dft::precision::SINGLE, double,
-                                                     double>::type; //FIXME Waiting for fix
+    using Precision_Type =
+        typename std::conditional_t<precision == dft::precision::SINGLE, float, double>;
 
     {
         Precision_Type forward_scale_set_value{ 143.5 };
@@ -272,8 +256,7 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         EXPECT_EQ(dft::config_value::COMPLEX_COMPLEX, value);
     }
 
-    /* Unimplemented Values */
-    auto real_storage = [&]() {
+    {
         dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
         descriptor.get_value(dft::config_param::REAL_STORAGE, &value);
         EXPECT_EQ(dft::config_value::REAL_REAL, value);
@@ -283,10 +266,9 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         value = dft::config_value::COMMITTED; // Initialize with invalid value
         descriptor.get_value(dft::config_param::REAL_STORAGE, &value);
         EXPECT_EQ(dft::config_value::REAL_REAL, value);
-    };
-    EXPECT_THROW(real_storage(), oneapi::mkl::unimplemented);
+    }
 
-    auto ordering = [&]() {
+    {
         dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
         descriptor.get_value(dft::config_param::ORDERING, &value);
         EXPECT_EQ(dft::config_value::ORDERED, value);
@@ -298,10 +280,9 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         descriptor.set_value(dft::config_param::ORDERING, dft::config_value::ORDERED);
         descriptor.get_value(dft::config_param::ORDERING, &value);
         EXPECT_EQ(dft::config_value::ORDERED, value);
-    };
-    EXPECT_THROW(ordering(), oneapi::mkl::unimplemented);
+    }
 
-    auto transpose = [&]() {
+    {
         bool value = true;
         descriptor.get_value(dft::config_param::TRANSPOSE, &value);
         EXPECT_EQ(false, value);
@@ -309,10 +290,11 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         descriptor.set_value(dft::config_param::TRANSPOSE, true);
         descriptor.get_value(dft::config_param::TRANSPOSE, &value);
         EXPECT_EQ(true, value);
-    };
-    EXPECT_THROW(transpose(), oneapi::mkl::unimplemented);
+        /* Set value to false again because transpose is not implemented and will fail on commit */
+        descriptor.set_value(dft::config_param::TRANSPOSE, false);
+    }
 
-    auto packed_format = [&]() {
+    {
         dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
         descriptor.get_value(dft::config_param::PACKED_FORMAT, &value);
         EXPECT_EQ(dft::config_value::CCE_FORMAT, value);
@@ -322,9 +304,8 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         value = dft::config_value::COMMITTED; // Initialize with invalid value
         descriptor.get_value(dft::config_param::PACKED_FORMAT, &value);
         EXPECT_EQ(dft::config_value::CCE_FORMAT, value);
-    };
-    EXPECT_THROW(packed_format(), oneapi::mkl::unimplemented);
-    descriptor.commit(sycl_queue);
+    }
+    commit_descriptor(descriptor, sycl_queue);
 }
 
 template <dft::precision precision, dft::domain domain>
@@ -343,17 +324,17 @@ inline void get_readonly_values(sycl::queue& sycl_queue) {
     descriptor.get_value(dft::config_param::DIMENSION, &dimension_value);
     EXPECT_EQ(dimension_value, 1);
 
-    dft::descriptor<precision, domain> descriptor3D{ std::vector<std::int64_t>(3) };
+    dft::descriptor<precision, domain> descriptor3D{ default_3d_lengths };
     descriptor3D.get_value(dft::config_param::DIMENSION, &dimension_value);
     EXPECT_EQ(dimension_value, 3);
 
-    bool commit_status;
+    dft::config_value commit_status;
     descriptor.get_value(dft::config_param::COMMIT_STATUS, &commit_status);
-    EXPECT_EQ(commit_status, false);
+    EXPECT_EQ(commit_status, dft::config_value::UNCOMMITTED);
 
-    descriptor.commit(sycl_queue);
+    commit_descriptor(descriptor, sycl_queue);
     descriptor.get_value(dft::config_param::COMMIT_STATUS, &commit_status);
-    EXPECT_EQ(commit_status, true);
+    EXPECT_EQ(commit_status, dft::config_value::COMMITTED);
 }
 
 template <dft::precision precision, dft::domain domain>
@@ -381,12 +362,19 @@ inline void set_readonly_values(sycl::queue& sycl_queue) {
         descriptor.set_value(dft::config_param::COMMIT_STATUS, dft::config_value::UNCOMMITTED),
         oneapi::mkl::invalid_argument);
 
-    descriptor.commit(sycl_queue);
+    commit_descriptor(descriptor, sycl_queue);
 }
 
 template <dft::precision precision, dft::domain domain>
 int test(sycl::device* dev) {
     sycl::queue sycl_queue(*dev, exception_handler);
+
+    if constexpr (precision == dft::detail::precision::DOUBLE) {
+        if (!sycl_queue.get_device().has(sycl::aspect::fp64)) {
+            std::cout << "Device does not support double precision." << std::endl;
+            return test_skipped;
+        }
+    }
 
     set_and_get_lengths<precision, domain>(sycl_queue);
     set_and_get_strides<precision, domain>(sycl_queue);
@@ -397,22 +385,25 @@ int test(sycl::device* dev) {
     return !::testing::Test::HasFailure();
 }
 
-class DescriptorTests
-        : public ::testing::TestWithParam<std::tuple<sycl::device*, oneapi::mkl::layout>> {};
+class DescriptorTests : public ::testing::TestWithParam<sycl::device*> {};
 
-TEST_P(DescriptorTests, DescriptorTests) {
-    EXPECT_TRUEORSKIP((test<dft::precision::SINGLE, dft::domain::REAL>(std::get<0>(GetParam()))));
-    EXPECT_TRUEORSKIP((test<dft::precision::DOUBLE, dft::domain::REAL>(std::get<0>(GetParam()))));
-    EXPECT_TRUEORSKIP(
-        (test<dft::precision::SINGLE, dft::domain::COMPLEX>(std::get<0>(GetParam()))));
-    EXPECT_TRUEORSKIP(
-        (test<dft::precision::DOUBLE, dft::domain::COMPLEX>(std::get<0>(GetParam()))));
+TEST_P(DescriptorTests, DescriptorTestsRealSingle) {
+    EXPECT_TRUEORSKIP((test<dft::precision::SINGLE, dft::domain::REAL>(GetParam())));
 }
 
-INSTANTIATE_TEST_SUITE_P(DescriptorTestSuite, DescriptorTests,
-                         ::testing::Combine(testing::ValuesIn(devices),
-                                            testing::Values(oneapi::mkl::layout::column_major,
-                                                            oneapi::mkl::layout::row_major)),
-                         ::LayoutDeviceNamePrint());
+TEST_P(DescriptorTests, DescriptorTestsRealDouble) {
+    EXPECT_TRUEORSKIP((test<dft::precision::DOUBLE, dft::domain::REAL>(GetParam())));
+}
+
+TEST_P(DescriptorTests, DescriptorTestsComplexSingle) {
+    EXPECT_TRUEORSKIP((test<dft::precision::SINGLE, dft::domain::COMPLEX>(GetParam())));
+}
+
+TEST_P(DescriptorTests, DescriptorTestsComplexDouble) {
+    EXPECT_TRUEORSKIP((test<dft::precision::DOUBLE, dft::domain::COMPLEX>(GetParam())));
+}
+
+INSTANTIATE_TEST_SUITE_P(DescriptorTestSuite, DescriptorTests, testing::ValuesIn(devices),
+                         ::DeviceNamePrint());
 
 } // anonymous namespace
