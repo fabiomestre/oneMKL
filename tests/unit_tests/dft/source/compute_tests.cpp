@@ -238,9 +238,6 @@ TEST_P(ComputeTests, ComplexDoublePrecisionNotInPlaceRealRealUSM) {
                                                                         std::get<1>(GetParam()) };
     EXPECT_TRUEORSKIP(test.test_out_of_place_real_real_USM());
 }
-//
-//INSTANTIATE_TEST_SUITE_P(ComputeTestSuite, ComputeTests, testing::ValuesIn(devices),
-//                         ::DeviceNamePrint());
 
 INSTANTIATE_TEST_SUITE_P(ComputeTestSuite, ComputeTests,
                          ::testing::Combine(testing::ValuesIn(devices), testing::ValuesIn(lengths)),
