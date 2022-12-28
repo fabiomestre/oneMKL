@@ -39,7 +39,7 @@ struct DFT_Test {
         typename std::conditional_t<precision == dft::precision::SINGLE, float, double>;
 
     using InputType = typename std::conditional_t<domain == dft::domain::REAL, PrecisionType,
-                                                std::complex<PrecisionType>>;
+                                                  std::complex<PrecisionType>>;
     using OutputType = std::complex<PrecisionType>;
 
     const std::int64_t size;
@@ -112,7 +112,7 @@ bool DFT_Test<precision, domain>::skip_test() {
 
 template <dft::precision precision, dft::domain domain>
 bool DFT_Test<precision, domain>::init() {
-    reference_forward_dft<InputType, OutputType>(sycl_queue, input, out_host_ref);
+    reference_forward_dft<InputType, OutputType>(input, out_host_ref);
     return static_cast<int>(!skip_test());
 }
 

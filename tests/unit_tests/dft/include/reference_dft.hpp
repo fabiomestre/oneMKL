@@ -23,16 +23,9 @@
 using namespace oneapi::mkl;
 using namespace sycl;
 
-template <typename T>
-struct is_complex_t : public std::false_type {};
-
-template <typename T>
-struct is_complex_t<std::complex<T>> : public std::true_type {};
-
 template <typename TypeIn, typename TypeOut>
-void reference_forward_dft(sycl::queue &queue, std::vector<TypeIn> &in,
-                           std::vector<TypeOut> &out) {
-    static_assert(is_complex_t<TypeOut>());
+void reference_forward_dft(std::vector<TypeIn> &in, std::vector<TypeOut> &out) {
+    static_assert(is_complex<TypeOut>());
 
     double TWOPI = 2.0 * std::atan(1.0) * 4.0;
 
@@ -42,7 +35,7 @@ void reference_forward_dft(sycl::queue &queue, std::vector<TypeIn> &in,
         out[k] = 0;
         out_temp = 0;
         for (int n = 0; n < N; n++) {
-            if constexpr (is_complex_t<TypeIn>()) {
+            if constexpr (is_complex<TypeIn>()) {
                 out_temp += static_cast<std::complex<double>>(in[n]) *
                             std::complex<double>{ std::cos(n * k * TWOPI / N),
                                                   -std::sin(n * k * TWOPI / N) };
