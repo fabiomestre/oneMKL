@@ -20,9 +20,6 @@
 #ifndef ONEMKL_REFERENCE_DFT_HPP
 #define ONEMKL_REFERENCE_DFT_HPP
 
-using namespace oneapi::mkl;
-using namespace sycl;
-
 template <typename TypeIn, typename TypeOut>
 void reference_forward_dft(std::vector<TypeIn> &in, std::vector<TypeOut> &out) {
     static_assert(is_complex<TypeOut>());

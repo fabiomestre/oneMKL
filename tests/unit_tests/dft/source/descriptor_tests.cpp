@@ -34,37 +34,35 @@ extern std::vector<sycl::device*> devices;
 
 namespace {
 
-using namespace oneapi::mkl;
-
 constexpr std::int64_t default_1d_lengths = 4;
 const std::vector<std::int64_t> default_3d_lengths{ 124, 5, 3 };
 
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 inline void set_and_get_lengths(sycl::queue& sycl_queue) {
     /* Negative Testing */
     {
-        dft::descriptor<precision, domain> descriptor{ default_3d_lengths };
-        EXPECT_THROW(descriptor.set_value(dft::config_param::LENGTHS, nullptr),
+        oneapi::mkl::dft::descriptor<precision, domain> descriptor{ default_3d_lengths };
+        EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::LENGTHS, nullptr),
                      oneapi::mkl::invalid_argument);
     }
 
     /* 1D */
     {
-        dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
+        oneapi::mkl::dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
 
         std::int64_t lengths_value{ 0 };
         std::int64_t new_lengths{ 2345 };
         std::int64_t dimensions_before_set{ 0 };
         std::int64_t dimensions_after_set{ 0 };
 
-        descriptor.get_value(dft::config_param::LENGTHS, &lengths_value);
-        descriptor.get_value(dft::config_param::DIMENSION, &dimensions_before_set);
+        descriptor.get_value(oneapi::mkl::dft::config_param::LENGTHS, &lengths_value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::DIMENSION, &dimensions_before_set);
         EXPECT_EQ(default_1d_lengths, lengths_value);
         EXPECT_EQ(dimensions_before_set, 1);
 
-        descriptor.set_value(dft::config_param::LENGTHS, new_lengths);
-        descriptor.get_value(dft::config_param::LENGTHS, &lengths_value);
-        descriptor.get_value(dft::config_param::DIMENSION, &dimensions_after_set);
+        descriptor.set_value(oneapi::mkl::dft::config_param::LENGTHS, new_lengths);
+        descriptor.get_value(oneapi::mkl::dft::config_param::LENGTHS, &lengths_value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::DIMENSION, &dimensions_after_set);
         EXPECT_EQ(new_lengths, lengths_value);
         EXPECT_EQ(dimensions_before_set, dimensions_after_set);
 
@@ -75,35 +73,35 @@ inline void set_and_get_lengths(sycl::queue& sycl_queue) {
     {
         const std::int64_t dimensions = 3;
 
-        dft::descriptor<precision, domain> descriptor{ default_3d_lengths };
+        oneapi::mkl::dft::descriptor<precision, domain> descriptor{ default_3d_lengths };
 
         std::vector<std::int64_t> lengths_value(3);
         std::vector<std::int64_t> new_lengths{ 1, 2, 7 };
         std::int64_t dimensions_before_set{ 0 };
         std::int64_t dimensions_after_set{ 0 };
 
-        descriptor.get_value(dft::config_param::LENGTHS, lengths_value.data());
-        descriptor.get_value(dft::config_param::DIMENSION, &dimensions_before_set);
+        descriptor.get_value(oneapi::mkl::dft::config_param::LENGTHS, lengths_value.data());
+        descriptor.get_value(oneapi::mkl::dft::config_param::DIMENSION, &dimensions_before_set);
 
         EXPECT_EQ(default_3d_lengths, lengths_value);
         EXPECT_EQ(dimensions, dimensions_before_set);
 
-        descriptor.set_value(dft::config_param::LENGTHS, new_lengths.data());
-        descriptor.get_value(dft::config_param::LENGTHS, lengths_value.data());
-        descriptor.get_value(dft::config_param::DIMENSION, &dimensions_after_set);
+        descriptor.set_value(oneapi::mkl::dft::config_param::LENGTHS, new_lengths.data());
+        descriptor.get_value(oneapi::mkl::dft::config_param::LENGTHS, lengths_value.data());
+        descriptor.get_value(oneapi::mkl::dft::config_param::DIMENSION, &dimensions_after_set);
 
         EXPECT_EQ(new_lengths, lengths_value);
         EXPECT_EQ(dimensions_before_set, dimensions_after_set);
     }
 }
 
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 inline void set_and_get_strides(sycl::queue& sycl_queue) {
-    dft::descriptor<precision, domain> descriptor{ default_3d_lengths };
+    oneapi::mkl::dft::descriptor<precision, domain> descriptor{ default_3d_lengths };
 
-    EXPECT_THROW(descriptor.set_value(dft::config_param::INPUT_STRIDES, nullptr),
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::INPUT_STRIDES, nullptr),
                  oneapi::mkl::invalid_argument);
-    EXPECT_THROW(descriptor.set_value(dft::config_param::OUTPUT_STRIDES, nullptr),
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::OUTPUT_STRIDES, nullptr),
                  oneapi::mkl::invalid_argument);
 
     constexpr std::int64_t strides_size = 4;
@@ -116,7 +114,7 @@ inline void set_and_get_strides(sycl::queue& sycl_queue) {
 
     std::vector<std::int64_t> input_strides_value;
     std::vector<std::int64_t> output_strides_value;
-    if constexpr (domain == dft::domain::COMPLEX) {
+    if constexpr (domain == oneapi::mkl::dft::domain::COMPLEX) {
         input_strides_value = { 50, default_stride_d1 * 2, default_stride_d2 * 2,
                                 default_stride_d3 * 2 };
         output_strides_value = { 50, default_stride_d1 * 2, default_stride_d2 * 2,
@@ -132,37 +130,46 @@ inline void set_and_get_strides(sycl::queue& sycl_queue) {
     std::vector<std::int64_t> input_strides_before_set(strides_size);
     std::vector<std::int64_t> input_strides_after_set(strides_size);
 
-    descriptor.get_value(dft::config_param::INPUT_STRIDES, input_strides_before_set.data());
+    descriptor.get_value(oneapi::mkl::dft::config_param::INPUT_STRIDES,
+                         input_strides_before_set.data());
     EXPECT_EQ(default_strides_value, input_strides_before_set);
-    descriptor.set_value(dft::config_param::INPUT_STRIDES, input_strides_value.data());
-    descriptor.get_value(dft::config_param::INPUT_STRIDES, input_strides_after_set.data());
+    descriptor.set_value(oneapi::mkl::dft::config_param::INPUT_STRIDES, input_strides_value.data());
+    descriptor.get_value(oneapi::mkl::dft::config_param::INPUT_STRIDES,
+                         input_strides_after_set.data());
     EXPECT_EQ(input_strides_value, input_strides_after_set);
 
     std::vector<std::int64_t> output_strides_before_set(strides_size);
     std::vector<std::int64_t> output_strides_after_set(strides_size);
-    descriptor.get_value(dft::config_param::OUTPUT_STRIDES, output_strides_before_set.data());
+    descriptor.get_value(oneapi::mkl::dft::config_param::OUTPUT_STRIDES,
+                         output_strides_before_set.data());
     EXPECT_EQ(default_strides_value, output_strides_before_set);
-    descriptor.set_value(dft::config_param::OUTPUT_STRIDES, output_strides_value.data());
-    descriptor.get_value(dft::config_param::OUTPUT_STRIDES, output_strides_after_set.data());
+    descriptor.set_value(oneapi::mkl::dft::config_param::OUTPUT_STRIDES,
+                         output_strides_value.data());
+    descriptor.get_value(oneapi::mkl::dft::config_param::OUTPUT_STRIDES,
+                         output_strides_after_set.data());
     EXPECT_EQ(input_strides_value, output_strides_after_set);
 }
 
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 inline void set_and_get_values(sycl::queue& sycl_queue) {
-    dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
+    oneapi::mkl::dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
 
     using Precision_Type =
-        typename std::conditional_t<precision == dft::precision::SINGLE, float, double>;
+        typename std::conditional_t<precision == oneapi::mkl::dft::precision::SINGLE, float,
+                                    double>;
 
     {
         Precision_Type forward_scale_set_value{ 143.5 };
         Precision_Type forward_scale_before_set;
         Precision_Type forward_scale_after_set;
 
-        descriptor.get_value(dft::config_param::FORWARD_SCALE, &forward_scale_before_set);
+        descriptor.get_value(oneapi::mkl::dft::config_param::FORWARD_SCALE,
+                             &forward_scale_before_set);
         EXPECT_EQ(1.0, forward_scale_before_set);
-        descriptor.set_value(dft::config_param::FORWARD_SCALE, forward_scale_set_value);
-        descriptor.get_value(dft::config_param::FORWARD_SCALE, &forward_scale_after_set);
+        descriptor.set_value(oneapi::mkl::dft::config_param::FORWARD_SCALE,
+                             forward_scale_set_value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::FORWARD_SCALE,
+                             &forward_scale_after_set);
         EXPECT_EQ(forward_scale_set_value, forward_scale_after_set);
     }
 
@@ -171,10 +178,13 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         Precision_Type backward_scale_before_set;
         Precision_Type backward_scale_after_set;
 
-        descriptor.get_value(dft::config_param::BACKWARD_SCALE, &backward_scale_before_set);
+        descriptor.get_value(oneapi::mkl::dft::config_param::BACKWARD_SCALE,
+                             &backward_scale_before_set);
         EXPECT_EQ(1.0, backward_scale_before_set);
-        descriptor.set_value(dft::config_param::BACKWARD_SCALE, backward_scale_set_value);
-        descriptor.get_value(dft::config_param::BACKWARD_SCALE, &backward_scale_after_set);
+        descriptor.set_value(oneapi::mkl::dft::config_param::BACKWARD_SCALE,
+                             backward_scale_set_value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::BACKWARD_SCALE,
+                             &backward_scale_after_set);
         EXPECT_EQ(backward_scale_set_value, backward_scale_after_set);
     }
 
@@ -183,10 +193,13 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         std::int64_t n_transforms_before_set;
         std::int64_t n_transforms_after_set;
 
-        descriptor.get_value(dft::config_param::NUMBER_OF_TRANSFORMS, &n_transforms_before_set);
+        descriptor.get_value(oneapi::mkl::dft::config_param::NUMBER_OF_TRANSFORMS,
+                             &n_transforms_before_set);
         EXPECT_EQ(1, n_transforms_before_set);
-        descriptor.set_value(dft::config_param::NUMBER_OF_TRANSFORMS, n_transforms_set_value);
-        descriptor.get_value(dft::config_param::NUMBER_OF_TRANSFORMS, &n_transforms_after_set);
+        descriptor.set_value(oneapi::mkl::dft::config_param::NUMBER_OF_TRANSFORMS,
+                             n_transforms_set_value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::NUMBER_OF_TRANSFORMS,
+                             &n_transforms_after_set);
         EXPECT_EQ(n_transforms_set_value, n_transforms_after_set);
     }
 
@@ -195,10 +208,11 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         std::int64_t fwd_distance_before_set;
         std::int64_t fwd_distance_after_set;
 
-        descriptor.get_value(dft::config_param::FWD_DISTANCE, &fwd_distance_before_set);
+        descriptor.get_value(oneapi::mkl::dft::config_param::FWD_DISTANCE,
+                             &fwd_distance_before_set);
         EXPECT_EQ(1, fwd_distance_before_set);
-        descriptor.set_value(dft::config_param::FWD_DISTANCE, fwd_distance_set_value);
-        descriptor.get_value(dft::config_param::FWD_DISTANCE, &fwd_distance_after_set);
+        descriptor.set_value(oneapi::mkl::dft::config_param::FWD_DISTANCE, fwd_distance_set_value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::FWD_DISTANCE, &fwd_distance_after_set);
         EXPECT_EQ(fwd_distance_set_value, fwd_distance_after_set);
     }
 
@@ -207,169 +221,193 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         std::int64_t bwd_distance_before_set;
         std::int64_t bwd_distance_after_set;
 
-        descriptor.get_value(dft::config_param::BWD_DISTANCE, &bwd_distance_before_set);
+        descriptor.get_value(oneapi::mkl::dft::config_param::BWD_DISTANCE,
+                             &bwd_distance_before_set);
         EXPECT_EQ(1, bwd_distance_before_set);
-        descriptor.set_value(dft::config_param::BWD_DISTANCE, bwd_distance_set_value);
-        descriptor.get_value(dft::config_param::BWD_DISTANCE, &bwd_distance_after_set);
+        descriptor.set_value(oneapi::mkl::dft::config_param::BWD_DISTANCE, bwd_distance_set_value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::BWD_DISTANCE, &bwd_distance_after_set);
         EXPECT_EQ(bwd_distance_set_value, bwd_distance_after_set);
     }
 
     {
-        dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::PLACEMENT, &value);
-        EXPECT_EQ(dft::config_value::INPLACE, value);
+        oneapi::mkl::dft::config_value value{
+            oneapi::mkl::dft::config_value::COMMITTED
+        }; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::PLACEMENT, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::INPLACE, value);
 
-        descriptor.set_value(dft::config_param::PLACEMENT, dft::config_value::NOT_INPLACE);
-        descriptor.get_value(dft::config_param::PLACEMENT, &value);
-        EXPECT_EQ(dft::config_value::NOT_INPLACE, value);
+        descriptor.set_value(oneapi::mkl::dft::config_param::PLACEMENT,
+                             oneapi::mkl::dft::config_value::NOT_INPLACE);
+        descriptor.get_value(oneapi::mkl::dft::config_param::PLACEMENT, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::NOT_INPLACE, value);
 
-        descriptor.set_value(dft::config_param::PLACEMENT, dft::config_value::INPLACE);
-        descriptor.get_value(dft::config_param::PLACEMENT, &value);
-        EXPECT_EQ(dft::config_value::INPLACE, value);
+        descriptor.set_value(oneapi::mkl::dft::config_param::PLACEMENT,
+                             oneapi::mkl::dft::config_value::INPLACE);
+        descriptor.get_value(oneapi::mkl::dft::config_param::PLACEMENT, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::INPLACE, value);
     }
 
     {
-        dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::COMPLEX_STORAGE, &value);
-        EXPECT_EQ(dft::config_value::COMPLEX_COMPLEX, value);
+        oneapi::mkl::dft::config_value value{
+            oneapi::mkl::dft::config_value::COMMITTED
+        }; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::COMPLEX_STORAGE, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::COMPLEX_COMPLEX, value);
 
-        descriptor.set_value(dft::config_param::COMPLEX_STORAGE, dft::config_value::REAL_REAL);
-        descriptor.get_value(dft::config_param::COMPLEX_STORAGE, &value);
-        EXPECT_EQ(dft::config_value::REAL_REAL, value);
+        descriptor.set_value(oneapi::mkl::dft::config_param::COMPLEX_STORAGE,
+                             oneapi::mkl::dft::config_value::REAL_REAL);
+        descriptor.get_value(oneapi::mkl::dft::config_param::COMPLEX_STORAGE, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::REAL_REAL, value);
 
-        descriptor.set_value(dft::config_param::COMPLEX_STORAGE,
-                             dft::config_value::COMPLEX_COMPLEX);
-        descriptor.get_value(dft::config_param::COMPLEX_STORAGE, &value);
-        EXPECT_EQ(dft::config_value::COMPLEX_COMPLEX, value);
+        descriptor.set_value(oneapi::mkl::dft::config_param::COMPLEX_STORAGE,
+                             oneapi::mkl::dft::config_value::COMPLEX_COMPLEX);
+        descriptor.get_value(oneapi::mkl::dft::config_param::COMPLEX_STORAGE, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::COMPLEX_COMPLEX, value);
     }
 
     {
-        dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::CONJUGATE_EVEN_STORAGE, &value);
-        EXPECT_EQ(dft::config_value::COMPLEX_COMPLEX, value);
+        oneapi::mkl::dft::config_value value{
+            oneapi::mkl::dft::config_value::COMMITTED
+        }; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::CONJUGATE_EVEN_STORAGE, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::COMPLEX_COMPLEX, value);
 
-        descriptor.set_value(dft::config_param::CONJUGATE_EVEN_STORAGE,
-                             dft::config_value::COMPLEX_COMPLEX);
+        descriptor.set_value(oneapi::mkl::dft::config_param::CONJUGATE_EVEN_STORAGE,
+                             oneapi::mkl::dft::config_value::COMPLEX_COMPLEX);
 
-        value = dft::config_value::COMMITTED; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::CONJUGATE_EVEN_STORAGE, &value);
-        EXPECT_EQ(dft::config_value::COMPLEX_COMPLEX, value);
+        value = oneapi::mkl::dft::config_value::COMMITTED; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::CONJUGATE_EVEN_STORAGE, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::COMPLEX_COMPLEX, value);
     }
 
     {
-        dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::REAL_STORAGE, &value);
-        EXPECT_EQ(dft::config_value::REAL_REAL, value);
+        oneapi::mkl::dft::config_value value{
+            oneapi::mkl::dft::config_value::COMMITTED
+        }; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::REAL_STORAGE, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::REAL_REAL, value);
 
-        descriptor.set_value(dft::config_param::REAL_STORAGE, dft::config_value::REAL_REAL);
+        descriptor.set_value(oneapi::mkl::dft::config_param::REAL_STORAGE,
+                             oneapi::mkl::dft::config_value::REAL_REAL);
 
-        value = dft::config_value::COMMITTED; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::REAL_STORAGE, &value);
-        EXPECT_EQ(dft::config_value::REAL_REAL, value);
+        value = oneapi::mkl::dft::config_value::COMMITTED; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::REAL_STORAGE, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::REAL_REAL, value);
     }
 
     {
-        dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::ORDERING, &value);
-        EXPECT_EQ(dft::config_value::ORDERED, value);
+        oneapi::mkl::dft::config_value value{
+            oneapi::mkl::dft::config_value::COMMITTED
+        }; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::ORDERING, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::ORDERED, value);
 
-        descriptor.set_value(dft::config_param::ORDERING, dft::config_value::BACKWARD_SCRAMBLED);
-        descriptor.get_value(dft::config_param::ORDERING, &value);
-        EXPECT_EQ(dft::config_value::BACKWARD_SCRAMBLED, value);
+        descriptor.set_value(oneapi::mkl::dft::config_param::ORDERING,
+                             oneapi::mkl::dft::config_value::BACKWARD_SCRAMBLED);
+        descriptor.get_value(oneapi::mkl::dft::config_param::ORDERING, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::BACKWARD_SCRAMBLED, value);
 
-        descriptor.set_value(dft::config_param::ORDERING, dft::config_value::ORDERED);
-        descriptor.get_value(dft::config_param::ORDERING, &value);
-        EXPECT_EQ(dft::config_value::ORDERED, value);
+        descriptor.set_value(oneapi::mkl::dft::config_param::ORDERING,
+                             oneapi::mkl::dft::config_value::ORDERED);
+        descriptor.get_value(oneapi::mkl::dft::config_param::ORDERING, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::ORDERED, value);
     }
 
     {
         bool value = true;
-        descriptor.get_value(dft::config_param::TRANSPOSE, &value);
+        descriptor.get_value(oneapi::mkl::dft::config_param::TRANSPOSE, &value);
         EXPECT_EQ(false, value);
 
-        descriptor.set_value(dft::config_param::TRANSPOSE, true);
-        descriptor.get_value(dft::config_param::TRANSPOSE, &value);
+        descriptor.set_value(oneapi::mkl::dft::config_param::TRANSPOSE, true);
+        descriptor.get_value(oneapi::mkl::dft::config_param::TRANSPOSE, &value);
         EXPECT_EQ(true, value);
         /* Set value to false again because transpose is not implemented and will fail on commit */
-        descriptor.set_value(dft::config_param::TRANSPOSE, false);
+        descriptor.set_value(oneapi::mkl::dft::config_param::TRANSPOSE, false);
     }
 
     {
-        dft::config_value value{ dft::config_value::COMMITTED }; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::PACKED_FORMAT, &value);
-        EXPECT_EQ(dft::config_value::CCE_FORMAT, value);
+        oneapi::mkl::dft::config_value value{
+            oneapi::mkl::dft::config_value::COMMITTED
+        }; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::PACKED_FORMAT, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::CCE_FORMAT, value);
 
-        descriptor.set_value(dft::config_param::PACKED_FORMAT, dft::config_value::CCE_FORMAT);
+        descriptor.set_value(oneapi::mkl::dft::config_param::PACKED_FORMAT,
+                             oneapi::mkl::dft::config_value::CCE_FORMAT);
 
-        value = dft::config_value::COMMITTED; // Initialize with invalid value
-        descriptor.get_value(dft::config_param::PACKED_FORMAT, &value);
-        EXPECT_EQ(dft::config_value::CCE_FORMAT, value);
+        value = oneapi::mkl::dft::config_value::COMMITTED; // Initialize with invalid value
+        descriptor.get_value(oneapi::mkl::dft::config_param::PACKED_FORMAT, &value);
+        EXPECT_EQ(oneapi::mkl::dft::config_value::CCE_FORMAT, value);
     }
     commit_descriptor(descriptor, sycl_queue);
 }
 
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 inline void get_readonly_values(sycl::queue& sycl_queue) {
-    dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
+    oneapi::mkl::dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
 
-    dft::domain domain_value;
-    descriptor.get_value(dft::config_param::FORWARD_DOMAIN, &domain_value);
+    oneapi::mkl::dft::domain domain_value;
+    descriptor.get_value(oneapi::mkl::dft::config_param::FORWARD_DOMAIN, &domain_value);
     EXPECT_EQ(domain_value, domain);
 
-    dft::precision precision_value;
-    descriptor.get_value(dft::config_param::PRECISION, &precision_value);
+    oneapi::mkl::dft::precision precision_value;
+    descriptor.get_value(oneapi::mkl::dft::config_param::PRECISION, &precision_value);
     EXPECT_EQ(precision_value, precision);
 
     std::int64_t dimension_value;
-    descriptor.get_value(dft::config_param::DIMENSION, &dimension_value);
+    descriptor.get_value(oneapi::mkl::dft::config_param::DIMENSION, &dimension_value);
     EXPECT_EQ(dimension_value, 1);
 
-    dft::descriptor<precision, domain> descriptor3D{ default_3d_lengths };
-    descriptor3D.get_value(dft::config_param::DIMENSION, &dimension_value);
+    oneapi::mkl::dft::descriptor<precision, domain> descriptor3D{ default_3d_lengths };
+    descriptor3D.get_value(oneapi::mkl::dft::config_param::DIMENSION, &dimension_value);
     EXPECT_EQ(dimension_value, 3);
 
-    dft::config_value commit_status;
-    descriptor.get_value(dft::config_param::COMMIT_STATUS, &commit_status);
-    EXPECT_EQ(commit_status, dft::config_value::UNCOMMITTED);
+    oneapi::mkl::dft::config_value commit_status;
+    descriptor.get_value(oneapi::mkl::dft::config_param::COMMIT_STATUS, &commit_status);
+    EXPECT_EQ(commit_status, oneapi::mkl::dft::config_value::UNCOMMITTED);
 
     commit_descriptor(descriptor, sycl_queue);
-    descriptor.get_value(dft::config_param::COMMIT_STATUS, &commit_status);
-    EXPECT_EQ(commit_status, dft::config_value::COMMITTED);
+    descriptor.get_value(oneapi::mkl::dft::config_param::COMMIT_STATUS, &commit_status);
+    EXPECT_EQ(commit_status, oneapi::mkl::dft::config_value::COMMITTED);
 }
 
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 inline void set_readonly_values(sycl::queue& sycl_queue) {
-    dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
+    oneapi::mkl::dft::descriptor<precision, domain> descriptor{ default_1d_lengths };
 
-    EXPECT_THROW(descriptor.set_value(dft::config_param::FORWARD_DOMAIN, dft::domain::REAL),
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::FORWARD_DOMAIN,
+                                      oneapi::mkl::dft::domain::REAL),
                  oneapi::mkl::invalid_argument);
-    EXPECT_THROW(descriptor.set_value(dft::config_param::FORWARD_DOMAIN, dft::domain::COMPLEX),
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::FORWARD_DOMAIN,
+                                      oneapi::mkl::dft::domain::COMPLEX),
                  oneapi::mkl::invalid_argument);
 
-    EXPECT_THROW(descriptor.set_value(dft::config_param::PRECISION, dft::precision::SINGLE),
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::PRECISION,
+                                      oneapi::mkl::dft::precision::SINGLE),
                  oneapi::mkl::invalid_argument);
-    EXPECT_THROW(descriptor.set_value(dft::config_param::PRECISION, dft::precision::DOUBLE),
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::PRECISION,
+                                      oneapi::mkl::dft::precision::DOUBLE),
                  oneapi::mkl::invalid_argument);
 
     std::int64_t set_dimension{ 3 };
-    EXPECT_THROW(descriptor.set_value(dft::config_param::DIMENSION, set_dimension),
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::DIMENSION, set_dimension),
                  oneapi::mkl::invalid_argument);
 
-    EXPECT_THROW(
-        descriptor.set_value(dft::config_param::COMMIT_STATUS, dft::config_value::COMMITTED),
-        oneapi::mkl::invalid_argument);
-    EXPECT_THROW(
-        descriptor.set_value(dft::config_param::COMMIT_STATUS, dft::config_value::UNCOMMITTED),
-        oneapi::mkl::invalid_argument);
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::COMMIT_STATUS,
+                                      oneapi::mkl::dft::config_value::COMMITTED),
+                 oneapi::mkl::invalid_argument);
+    EXPECT_THROW(descriptor.set_value(oneapi::mkl::dft::config_param::COMMIT_STATUS,
+                                      oneapi::mkl::dft::config_value::UNCOMMITTED),
+                 oneapi::mkl::invalid_argument);
 
     commit_descriptor(descriptor, sycl_queue);
 }
 
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 int test(sycl::device* dev) {
     sycl::queue sycl_queue(*dev, exception_handler);
 
-    if constexpr (precision == dft::detail::precision::DOUBLE) {
+    if constexpr (precision == oneapi::mkl::dft::precision::DOUBLE) {
         if (!sycl_queue.get_device().has(sycl::aspect::fp64)) {
             std::cout << "Device does not support double precision." << std::endl;
             return test_skipped;
@@ -388,19 +426,23 @@ int test(sycl::device* dev) {
 class DescriptorTests : public ::testing::TestWithParam<sycl::device*> {};
 
 TEST_P(DescriptorTests, DescriptorTestsRealSingle) {
-    EXPECT_TRUEORSKIP((test<dft::precision::SINGLE, dft::domain::REAL>(GetParam())));
+    EXPECT_TRUEORSKIP(
+        (test<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::REAL>(GetParam())));
 }
 
 TEST_P(DescriptorTests, DescriptorTestsRealDouble) {
-    EXPECT_TRUEORSKIP((test<dft::precision::DOUBLE, dft::domain::REAL>(GetParam())));
+    EXPECT_TRUEORSKIP(
+        (test<oneapi::mkl::dft::precision::DOUBLE, oneapi::mkl::dft::domain::REAL>(GetParam())));
 }
 
 TEST_P(DescriptorTests, DescriptorTestsComplexSingle) {
-    EXPECT_TRUEORSKIP((test<dft::precision::SINGLE, dft::domain::COMPLEX>(GetParam())));
+    EXPECT_TRUEORSKIP(
+        (test<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::COMPLEX>(GetParam())));
 }
 
 TEST_P(DescriptorTests, DescriptorTestsComplexDouble) {
-    EXPECT_TRUEORSKIP((test<dft::precision::DOUBLE, dft::domain::COMPLEX>(GetParam())));
+    EXPECT_TRUEORSKIP(
+        (test<oneapi::mkl::dft::precision::DOUBLE, oneapi::mkl::dft::domain::COMPLEX>(GetParam())));
 }
 
 INSTANTIATE_TEST_SUITE_P(DescriptorTestSuite, DescriptorTests, testing::ValuesIn(devices),

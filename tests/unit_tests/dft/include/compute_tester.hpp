@@ -30,25 +30,30 @@
 #include "test_common.hpp"
 #include "reference_dft.hpp"
 
-using namespace oneapi::mkl;
-
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 struct DFT_Test {
-    using descriptor_t = dft::descriptor<precision, domain>;
-    using PrecisionType =
-        typename std::conditional_t<precision == dft::precision::SINGLE, float, double>;
+    using descriptor_t = oneapi::mkl::dft::descriptor<precision, domain>;
 
-    using InputType = typename std::conditional_t<domain == dft::domain::REAL, PrecisionType,
-                                                  std::complex<PrecisionType>>;
+    template <typename ElemT>
+    using usm_allocator_t = sycl::usm_allocator<ElemT, sycl::usm::alloc::shared, 64>;
+
+    using PrecisionType =
+        typename std::conditional_t<precision == oneapi::mkl::dft::precision::SINGLE, float,
+                                    double>;
+
+    using InputType = typename std::conditional_t<domain == oneapi::mkl::dft::domain::REAL,
+                                                  PrecisionType, std::complex<PrecisionType>>;
     using OutputType = std::complex<PrecisionType>;
+
+    enum class TestType { buffer, usm };
 
     const std::int64_t size;
     const std::int64_t conjugate_even_size;
-    static constexpr int error_margin = 200;
+    static constexpr int error_margin = 10;
 
     sycl::device *dev;
     sycl::queue sycl_queue;
-    context cxt;
+    sycl::context cxt;
 
     std::vector<InputType> input;
     std::vector<PrecisionType> input_re;
@@ -57,8 +62,8 @@ struct DFT_Test {
 
     DFT_Test(sycl::device *dev, std::int64_t size);
 
-    bool skip_test();
-    bool init();
+    bool skip_test(TestType type);
+    bool init(TestType type);
 
     int test_in_place_buffer();
     int test_in_place_real_real_buffer();
@@ -70,7 +75,7 @@ struct DFT_Test {
     int test_out_of_place_real_real_USM();
 };
 
-template <dft::precision precision, dft::domain domain>
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
 DFT_Test<precision, domain>::DFT_Test(sycl::device *dev, std::int64_t size)
         : dev{ dev },
           size{ static_cast<std::int64_t>(size) },
@@ -84,7 +89,7 @@ DFT_Test<precision, domain>::DFT_Test(sycl::device *dev, std::int64_t size)
     out_host_ref = std::vector<OutputType>(size);
     rand_vector(input, size, 1);
 
-    if constexpr (domain == dft::domain::REAL) {
+    if constexpr (domain == oneapi::mkl::dft::domain::REAL) {
         for (int i = 0; i < input.size(); ++i) {
             input_re[i] = { input[i] };
             input_im[i] = 0;
@@ -98,27 +103,28 @@ DFT_Test<precision, domain>::DFT_Test(sycl::device *dev, std::int64_t size)
     }
 }
 
-template <dft::precision precision, dft::domain domain>
-bool DFT_Test<precision, domain>::skip_test() {
-    if constexpr (precision == dft::detail::precision::DOUBLE) {
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
+bool DFT_Test<precision, domain>::skip_test(TestType type) {
+    if constexpr (precision == oneapi::mkl::dft::precision::DOUBLE) {
         if (!sycl_queue.get_device().has(sycl::aspect::fp64)) {
             std::cout << "Device does not support double precision." << std::endl;
             return true;
         }
     }
 
+    if (type == TestType::usm &&
+        !sycl_queue.get_device().has(sycl::aspect::usm_shared_allocations)) {
+        std::cout << "Device does not support usm shared allocations." << std::endl;
+        return true;
+    }
+
     return false;
 }
 
-template <dft::precision precision, dft::domain domain>
-bool DFT_Test<precision, domain>::init() {
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
+bool DFT_Test<precision, domain>::init(TestType type) {
     reference_forward_dft<InputType, OutputType>(input, out_host_ref);
-    return static_cast<int>(!skip_test());
+    return static_cast<int>(!skip_test(type));
 }
-
-#include "compute_inplace.hpp"
-#include "compute_inplace_real_real.hpp"
-#include "compute_out_of_place.hpp"
-#include "compute_out_of_place_real_real.hpp"
 
 #endif //ONEMKL_COMPUTE_TESTER_HPP

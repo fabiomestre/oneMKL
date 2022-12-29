@@ -19,23 +19,23 @@
 
 set(DFT_SOURCES "compute_tests.cpp" "descriptor_tests.cpp")
 
-if(BUILD_SHARED_LIBS)
-  add_library(dft_source_rt OBJECT ${DFT_SOURCES})
-  target_compile_options(dft_source_rt PRIVATE -DCALL_RT_API -DNOMINMAX)
-  target_include_directories(dft_source_rt
-          PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include
-          PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include
-          PUBLIC ${PROJECT_SOURCE_DIR}/include
-          PUBLIC ${PROJECT_SOURCE_DIR}/deps/googletest/include
-          PUBLIC ${CMAKE_BINARY_DIR}/bin
-          PUBLIC ${CBLAS_INCLUDE}
-          )
-  if (USE_ADD_SYCL_TO_TARGET_INTEGRATION)
-    add_sycl_to_target(TARGET dft_source_rt SOURCES ${DFT_SOURCES})
-  else()
-    target_link_libraries(dft_source_rt PUBLIC ONEMKL::SYCL::SYCL)
-  endif()
-endif()
+if (BUILD_SHARED_LIBS)
+    add_library(dft_source_rt OBJECT ${DFT_SOURCES})
+    target_compile_options(dft_source_rt PRIVATE -DCALL_RT_API -DNOMINMAX)
+    target_include_directories(dft_source_rt
+            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include
+            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+            PUBLIC ${PROJECT_SOURCE_DIR}/include
+            PUBLIC ${PROJECT_SOURCE_DIR}/deps/googletest/include
+            PUBLIC ${CMAKE_BINARY_DIR}/bin
+            PUBLIC ${CBLAS_INCLUDE}
+            )
+    if (USE_ADD_SYCL_TO_TARGET_INTEGRATION)
+        add_sycl_to_target(TARGET dft_source_rt SOURCES ${DFT_SOURCES})
+    else ()
+        target_link_libraries(dft_source_rt PUBLIC ONEMKL::SYCL::SYCL)
+    endif ()
+endif ()
 
 add_library(dft_source_ct OBJECT ${DFT_SOURCES})
 target_compile_options(dft_source_ct PRIVATE -DNOMINMAX)
@@ -48,11 +48,11 @@ target_include_directories(dft_source_ct
         PUBLIC ${CBLAS_INCLUDE}
         )
 if (USE_ADD_SYCL_TO_TARGET_INTEGRATION)
-  add_sycl_to_target(TARGET dft_source_ct SOURCES ${DFT_SOURCES})
-else()
-  target_link_libraries(dft_source_ct PUBLIC
-          onemkl
-          ONEMKL::SYCL::SYCL
-          )
-endif()
+    add_sycl_to_target(TARGET dft_source_ct SOURCES ${DFT_SOURCES})
+else ()
+    target_link_libraries(dft_source_ct PUBLIC
+            onemkl
+            ONEMKL::SYCL::SYCL
+            )
+endif ()
 

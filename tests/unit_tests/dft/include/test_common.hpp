@@ -32,9 +32,6 @@
 #include <CL/sycl.hpp>
 #endif
 
-namespace {
-using namespace oneapi::mkl;
-
 template <typename T>
 struct complex_info {
     using real_type = T;
@@ -67,16 +64,11 @@ typename std::enable_if<!std::is_integral<fp>::value, bool>::type check_equal(fp
     fp_real aerr = std::abs(x - x_ref);
     fp_real rerr = aerr / std::abs(x_ref);
     ok = (rerr <= bound) || (aerr <= bound);
-    if (!ok)
+    if (!ok) {
         std::cout << "relative error = " << rerr << " absolute error = " << aerr
                   << " limit = " << bound << std::endl;
+    }
     return ok;
-}
-
-template <typename fp>
-typename std::enable_if<std::is_integral<fp>::value, bool>::type check_equal(fp x, fp x_ref,
-                                                                             int error_mag) {
-    return (x == x_ref);
 }
 
 template <typename fp>
@@ -102,8 +94,9 @@ bool check_equal_vector(fp *v, fp *v_ref, int n, int inc, int error_mag, std::os
                       << " vs. Reference " << v_ref[i * abs_inc] << std::endl;
             good = false;
             count++;
-            if (count > max_print)
+            if (count > max_print) {
                 return good;
+            }
         }
     }
 
@@ -123,14 +116,14 @@ bool check_equal_vector(vec1 &v, vec2 &v_ref, int n, int inc, int error_mag, std
                       << " vs. Reference " << v_ref[i * abs_inc] << std::endl;
             good = false;
             count++;
-            if (count > max_print)
+            if (count > max_print) {
                 return good;
+            }
         }
     }
 
     return good;
 }
-
 
 // Random initialization.
 template <typename fp>
@@ -149,24 +142,18 @@ template <>
 std::complex<double> rand_scalar() {
     return rand_complex_scalar<double>();
 }
-template <>
-int8_t rand_scalar() {
-    return std::rand() % 254 - 127;
-}
+
 template <>
 int32_t rand_scalar() {
     return std::rand() % 256 - 128;
-}
-template <>
-uint8_t rand_scalar() {
-    return std::rand() % 128;
 }
 
 template <typename fp>
 void rand_vector(fp *v, int n, int inc) {
     int abs_inc = std::abs(inc);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
         v[i * abs_inc] = rand_scalar<fp>();
+    }
 }
 
 template <typename vec>
@@ -176,8 +163,9 @@ void rand_vector(vec &v, int n, int inc) {
 
     v.resize(n * abs_inc);
 
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
         v[i * abs_inc] = rand_scalar<fp>();
+    }
 }
 
 // Catch asynchronous exceptions.
@@ -193,8 +181,9 @@ auto exception_handler = [](sycl::exception_list exceptions) {
     }
 };
 
-template <dft::precision precision, dft::domain domain>
-void commit_descriptor(dft::descriptor<precision, domain> &descriptor, sycl::queue queue) {
+template <oneapi::mkl::dft::precision precision, oneapi::mkl::dft::domain domain>
+void commit_descriptor(oneapi::mkl::dft::descriptor<precision, domain> &descriptor,
+                       sycl::queue queue) {
 #ifdef CALL_RT_API
     descriptor.commit(queue);
 #else
@@ -235,6 +224,5 @@ public:
         return info_name;
     }
 };
-} // namespace
 
 #endif //ONEMKL_TEST_COMMON_HPP
