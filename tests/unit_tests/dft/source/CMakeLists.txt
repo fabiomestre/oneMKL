@@ -49,6 +49,7 @@ target_include_directories(dft_source_ct
         )
 if (USE_ADD_SYCL_TO_TARGET_INTEGRATION)
     add_sycl_to_target(TARGET dft_source_ct SOURCES ${DFT_SOURCES})
+    target_link_libraries(dft_source_ct PUBLIC onemkl)
 else ()
     target_link_libraries(dft_source_ct PUBLIC
             onemkl
