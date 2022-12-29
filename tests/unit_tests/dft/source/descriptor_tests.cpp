@@ -327,6 +327,7 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
     }
 
     {
+        /* Only value currently supported for PACKED_FORMAT is the config_value::CCE_FORMAT */
         oneapi::mkl::dft::config_value value{
             oneapi::mkl::dft::config_value::COMMITTED
         }; // Initialize with invalid value
