@@ -321,7 +321,8 @@ inline void set_and_get_values(sycl::queue& sycl_queue) {
         descriptor.set_value(oneapi::mkl::dft::config_param::TRANSPOSE, true);
         descriptor.get_value(oneapi::mkl::dft::config_param::TRANSPOSE, &value);
         EXPECT_EQ(true, value);
-        /* Set value to false again because transpose is not implemented and will fail on commit */
+        /* Set value to false again because transpose is not implemented and will fail on commit
+         * when using the MKLGPU backend */
         descriptor.set_value(oneapi::mkl::dft::config_param::TRANSPOSE, false);
     }
 
