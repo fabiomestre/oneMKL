@@ -137,8 +137,6 @@ int DFT_Test<precision, domain>::test_out_of_place_real_real_buffer() {
     EXPECT_TRUE(false);
 
     return !::testing::Test::HasFailure();
-
-    return test_skipped;
 }
 
 #endif //ONEMKL_COMPUTE_OUT_OF_PLACE_REAL_REAL_HPP
